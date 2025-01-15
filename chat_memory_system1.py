@@ -1,75 +1,56 @@
+from flask import Flask, request, jsonify
+import os
 import json
-from sentence_transformers import SentenceTransformer, util
 import spacy
+from sentence_transformers import SentenceTransformer
 
-# File to store chat history
-HISTORY_FILE = "chat_history.json"
+# Initialize Flask app
+app = Flask(__name__)
 
-# Load SpaCy model for tokenization
+# Load models
 nlp = spacy.load("en_core_web_sm")
+sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
 
-# Load SentenceTransformer for semantic similarity
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# Memory log file
+MEMORY_FILE = "chat_memory.json"
 
-# Function to load chat history
-def load_history():
-    try:
-        with open(HISTORY_FILE, 'r') as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return []
+# Initialize memory
+if not os.path.exists(MEMORY_FILE):
+    with open(MEMORY_FILE, "w") as f:
+        json.dump([], f)
 
-# Function to save chat history
-def save_history(history):
-    with open(HISTORY_FILE, 'w') as file:
-        json.dump(history, file, indent=4)
+# Function to log interactions
+def log_interaction(query, response):
+    with open(MEMORY_FILE, "r+") as f:
+        memory = json.load(f)
+        memory.append({"query": query, "response": response})
+        f.seek(0)
+        json.dump(memory, f, indent=4)
 
-# Function to find context based on semantic similarity
-def get_context(query, history):
-    if not history:
-        return None
+# API route for querying
+@app.route("/query", methods=["POST"])
+def query():
+    data = request.json
+    user_query = data.get("query", "")
+    if not user_query:
+        return jsonify({"error": "No query provided"}), 400
 
-    query_embedding = model.encode(query, convert_to_tensor=True)
-    best_match = None
-    highest_similarity = 0.0
+    # Process query
+    tokens = [token.text for token in nlp(user_query)]
+    embeddings = sentence_model.encode([user_query]).tolist()
+    response = f"Default response to your query: {user_query}"
 
-    for entry in history:
-        past_query_embedding = model.encode(entry['query'], convert_to_tensor=True)
-        similarity = util.pytorch_cos_sim(query_embedding, past_query_embedding).item()
-        if similarity > highest_similarity:
-            highest_similarity = similarity
-            best_match = entry
+    # Log and return response
+    log_interaction(user_query, response)
+    return jsonify({"tokens": tokens, "embeddings": embeddings, "response": response})
 
-    return best_match if highest_similarity > 0.5 else None
+# API route for fetching memory
+@app.route("/memory", methods=["GET"])
+def memory():
+    with open(MEMORY_FILE, "r") as f:
+        memory = json.load(f)
+    return jsonify(memory)
 
-def main():
-    print("Real-Time Memory System initialized. Listening for queries...")
-    history = load_history()
-
-    while True:
-        user_query = input("\nEnter your query (or type 'exit' to quit): ")
-        if user_query.lower() == 'exit':
-            print("Exiting the system. Goodbye!")
-            break
-
-        # Tokenize the input query (example usage of SpaCy)
-        tokens = [token.text for token in nlp(user_query)]
-        print(f"Tokenized Query: {tokens}")
-
-        # Retrieve context
-        context = get_context(user_query, history)
-        if context:
-            print(f"Found Relevant Context: {context['query']}")
-            response = f"Based on your past query '{context['query']}', here's my response: {context['response']}"
-        else:
-            response = f"Default response to your query: {user_query}"
-
-        # Show response
-        print(f"\nResponse:\n{response}")
-
-        # Update history
-        history.append({'query': user_query, 'response': response})
-        save_history(history)
-
+# Run the app
 if __name__ == "__main__":
-    main()
+    app.run(host="0.0.0.0", port=5000)
