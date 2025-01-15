@@ -4,22 +4,15 @@ import json
 import spacy
 from sentence_transformers import SentenceTransformer
 
-# Initialize Flask app
 app = Flask(__name__)
-
-# Load models
 nlp = spacy.load("en_core_web_sm")
 sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# Memory log file
 MEMORY_FILE = "chat_memory.json"
 
-# Initialize memory
 if not os.path.exists(MEMORY_FILE):
     with open(MEMORY_FILE, "w") as f:
         json.dump([], f)
 
-# Function to log interactions
 def log_interaction(query, response):
     with open(MEMORY_FILE, "r+") as f:
         memory = json.load(f)
@@ -27,30 +20,38 @@ def log_interaction(query, response):
         f.seek(0)
         json.dump(memory, f, indent=4)
 
-# API route for querying
 @app.route("/query", methods=["POST"])
 def query():
-    data = request.json
-    user_query = data.get("query", "")
-    if not user_query:
-        return jsonify({"error": "No query provided"}), 400
+    try:
+        # Log raw request data
+        print(f"Raw Data: {request.data}")  # Add this line to log incoming data
+        print(f"Headers: {request.headers}")  # Log headers to ensure correct Content-Type
 
-    # Process query
-    tokens = [token.text for token in nlp(user_query)]
-    embeddings = sentence_model.encode([user_query]).tolist()
-    response = f"Default response to your query: {user_query}"
+        # Parse JSON payload
+        data = request.json
+        if not data or "query" not in data:
+            print("Error: No query provided")
+            return jsonify({"error": "No query provided"}), 400
 
-    # Log and return response
-    log_interaction(user_query, response)
-    return jsonify({"tokens": tokens, "embeddings": embeddings, "response": response})
+        user_query = data["query"]
+        print(f"User query: {user_query}")
 
-# API route for fetching memory
+        tokens = [token.text for token in nlp(user_query)]
+        embeddings = sentence_model.encode([user_query]).tolist()
+        response = f"Default response to your query: {user_query}"
+
+        log_interaction(user_query, response)
+        return jsonify({"tokens": tokens, "embeddings": embeddings, "response": response})
+
+    except Exception as e:
+        print(f"Exception occurred: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/memory", methods=["GET"])
 def memory():
     with open(MEMORY_FILE, "r") as f:
         memory = json.load(f)
     return jsonify(memory)
 
-# Run the app
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=55515, debug=True)
