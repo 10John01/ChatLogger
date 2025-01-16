@@ -53,8 +53,7 @@ def memory():
     return jsonify(memory)
 
 if __name__ == "__main__":
-    # Dynamically determine the port Render assigns or default to 5000
-    port = int(os.environ.get("PORT", 22531))  # Default port is 22531 (Extra Cool)
-    if port < 1024 or (7000 <= port <= 9000) or port > 49151:
-        raise ValueError(f"Invalid port {port}: must be 1024–49151 excluding 7000–9000.")
+    # Dynamically bind to the port Render provides or fallback to 22531 for local testing
+    port = int(os.environ.get("PORT", 22531))
     app.run(host="0.0.0.0", port=port, debug=True)
+
