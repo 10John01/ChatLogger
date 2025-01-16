@@ -10,5 +10,9 @@
     {
         "query": "Hello, how are you?",
         "response": "Default response to your query: Hello, how are you?"
+    },
+    {
+        "query": "Hello, how are you?",
+        "response": "Default response to your query: Hello, how are you?"
     }
 ]
