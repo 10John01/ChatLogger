@@ -6,5 +6,9 @@
     {
         "query": "What is the weather today?",
         "response": "Default response to your query: What is the weather today?"
+    },
+    {
+        "query": "Hello, how are you?",
+        "response": "Default response to your query: Hello, how are you?"
     }
 ]
