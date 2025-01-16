@@ -27,6 +27,11 @@ def log_interaction(query, response):
         f.seek(0)
         json.dump(memory, f, indent=4)
 
+# Root route for welcome message
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"message": "Welcome to GPT Memory Project!"}), 200
+
 # API route for querying
 @app.route("/query", methods=["POST"])
 def query():
@@ -52,8 +57,8 @@ def memory():
         memory = json.load(f)
     return jsonify(memory)
 
+# Main entry point
 if __name__ == "__main__":
     # Dynamically bind to the port Render provides or fallback to 22531 for local testing
     port = int(os.environ.get("PORT", 22531))
     app.run(host="0.0.0.0", port=port, debug=True)
-
