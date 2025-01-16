@@ -54,4 +54,6 @@ def memory():
     return jsonify(memory)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=55515, debug=True)
+    port = int(os.environ.get("PORT", 55515))  # Default to 55515 if PORT is not set
+    app.run(host="0.0.0.0", port=port, debug=True)
+
