@@ -169,3 +169,4 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+google-cloud-cli-438.0.0-darwin-arm.tar.gz
