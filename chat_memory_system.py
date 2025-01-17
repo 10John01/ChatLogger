@@ -8,7 +8,7 @@ from supabase import create_client, Client  # Supabase client library
 
 # Supabase configuration
 SUPABASE_URL = "https://mhlkzlxbeslcdvpkhfrr.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1obGt6bHhiZXNsY2R2cGtoZnJyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNzEzMjY1NywiZXhwIjoyMDUyNzA4NjU3fQ._M3ehpnBATYR4eJD-k0xOw7beHz4VO4b2agWo09awBI"
+SUPABASE_KEY = "your_supabase_key_here"
 
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -27,12 +27,14 @@ def log_interaction(query, response, interaction_type="text"):
             "query": query,
             "response": response,
             "timestamp": datetime.now().isoformat(),
-            "keywords": json.dumps([token.text for token in nlp(query) if token.is_alpha]),
-            "embeddings": json.dumps(sentence_model.encode([query]).tolist()),
+            "keywords": [token.text for token in nlp(query) if token.is_alpha],
+            "embeddings": sentence_model.encode([query]).tolist(),
             "type": interaction_type,
         }
         # Insert into Supabase
-        supabase.table("api.memory_entries").insert(entry).execute()
+        result = supabase.table("memory_entries").insert(entry).execute()
+        if result.status_code != 200:
+            print(f"Error logging interaction: {result.json()}")
     except Exception as e:
         print(f"Error logging interaction: {e}")
 
@@ -41,15 +43,16 @@ def search_memory(query, max_results=5):
     try:
         embeddings = sentence_model.encode([query]).tolist()
         # Fetch all memory entries
-        response = supabase.table("api.memory_entries").select("*").execute()
+        response = supabase.table("memory_entries").select("*").execute()
         all_entries = response.data if response.data else []
 
         results = []
         for entry in all_entries:
-            data_embeddings = json.loads(entry.get("embeddings", "[]"))
-            similarity = cosine_similarity(data_embeddings, embeddings[0])
-            if similarity > 0.8:  # Adjust similarity threshold as needed
-                results.append({**entry, "similarity": similarity})
+            if "embeddings" in entry:
+                data_embeddings = json.loads(entry["embeddings"])
+                similarity = cosine_similarity(data_embeddings, embeddings[0])
+                if similarity > 0.8:  # Adjust similarity threshold as needed
+                    results.append({**entry, "similarity": similarity})
 
         # Sort by similarity and return top results
         results.sort(key=lambda x: x["similarity"], reverse=True)
@@ -90,16 +93,19 @@ def query():
             "relevant_memories": relevant_memories
         })
     except Exception as e:
+        print(f"Error in /query route: {e}")
         return jsonify({"error": str(e)}), 500
 
 # API route for fetching all memory (for debugging)
 @app.route("/memory", methods=["GET"])
 def memory():
     try:
-        response = supabase.table("api.memory_entries").select("*").execute()
-        memory = response.data if response.data else []
-        return jsonify(memory)
+        response = supabase.table("memory_entries").select("*").execute()
+        if response.status_code != 200:
+            return jsonify({"error": response.json()}), 500
+        return jsonify(response.data if response.data else [])
     except Exception as e:
+        print(f"Error in /memory route: {e}")
         return jsonify({"error": str(e)}), 500
 
 # Root route for a friendly welcome message
