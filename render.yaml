@@ -1,11 +1,16 @@
 services:
-- type: web
-  name: GPT-Memory-Project
-  runtime: python
-  repo: https://github.com/10John01/GPT-Memory-Project
-  plan: free
-  region: oregon
-  buildCommand: pip install -r requirements.txt
-  startCommand: gunicorn chat_memory_system1:app --bind 0.0.0.0:$PORT
-version: "1"
-
+  - type: web
+    name: chat-memory-system  # The name of your service
+    env: python  # Environment: Python (as we are using Flask with Python)
+    buildCommand: pip install -r requirements.txt  # This installs the dependencies listed in requirements.txt
+    startCommand: gunicorn -w 4 -b 0.0.0.0:10000 chat_memory_system:app  # Running the Flask app using Gunicorn
+    envVars:
+      - key: SUPABASE_URL
+        value: ${SUPABASE_URL}  # Set from environment variable
+      - key: SUPABASE_KEY
+        value: ${SUPABASE_KEY}  # Set from environment variable
+      - key: SUPABASE_SERVICE_ROLE
+        value: ${SUPABASE_SERVICE_ROLE}  # Set from environment variable
+      - key: FLASK_ENV
+        value: "production"  # Flask should run in production mode
+    plan: starter  # Render's plan for the service (adjust if you need more resources)

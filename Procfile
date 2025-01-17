@@ -1,1 +1,1 @@
-web: gunicorn chat_memory_system1:app
+web: gunicorn -w 4 -b 0.0.0.0:10000 chat_memory_system:app

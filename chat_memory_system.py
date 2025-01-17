@@ -7,8 +7,8 @@ from sentence_transformers import SentenceTransformer
 from supabase import create_client, Client  # Supabase client library
 
 # Supabase configuration
-SUPABASE_URL = "https://mhlkzlxbeslcdvpkhfrr.supabase.co"
-SUPABASE_KEY = "your_supabase_key_here"
+SUPABASE_URL = os.getenv("SUPABASE_URL")  # Load from environment variable
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")  # Load from environment variable
 
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
