@@ -3,7 +3,9 @@ services:
   name: GPT-Memory-Project
   runtime: python
   repo: https://github.com/10John01/GPT-Memory-Project
-  branch: main
   plan: free
+  region: oregon
   buildCommand: pip install -r requirements.txt
-  startCommand: gunicorn chat_memory_system:app --bind 0.0.0.0:$PORT
+  startCommand: gunicorn chat_memory_system1:app --bind 0.0.0.0:$PORT
+version: "1"
+
